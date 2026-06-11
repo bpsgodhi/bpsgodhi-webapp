@@ -1,0 +1,181 @@
+{
+  "appName": "BPS School ERP",
+  "theme": "sky",
+  "auth": true,
+  "loginSheet": "Login",
+  "modules": [
+    {
+      "key": "admissions",
+      "label": "Admissions",
+      "sheet": "Admissions",
+      "icon": "GraduationCap",
+      "autoId": true,
+      "idColumn": "Admission No",
+      "idPrefix": "ADM-",
+      "groupBy": "Class",
+      "printable": "idcard",
+      "fields": [
+        { "key": "First Name", "label": "Student First Name", "type": "text", "required": true },
+        { "key": "Last Name", "label": "Student Last Name", "type": "text" },
+        { "key": "Date of Birth", "label": "Date of Birth", "type": "date" },
+        { "key": "Gender", "label": "Gender", "type": "select", "required": true, "filterable": true, "options": ["Male", "Female", "Other"] },
+        { "key": "Caste", "label": "Caste / Category", "type": "select", "filterable": true, "options": ["General", "OBC", "SC", "ST", "Other"] },
+        { "key": "Class", "label": "Class", "type": "select", "required": true, "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Section", "label": "Section", "type": "select", "filterable": true, "options": ["A", "B", "C", "D"] },
+        { "key": "Aadhaar No", "label": "Aadhaar Card No", "type": "text", "maxLength": 12 },
+        { "key": "Aadhaar Card", "label": "Aadhaar Card (upload)", "type": "file" },
+        { "key": "Previous School", "label": "Previous School Name", "type": "text" },
+        { "key": "Previous Marksheet", "label": "Previous Mark Sheet (upload)", "type": "file" },
+        { "key": "Certificate", "label": "Certificate (upload)", "type": "file" },
+        { "key": "Student Photo", "label": "Student Photo (upload)", "type": "file", "accept": "image/*" },
+        { "key": "Father Name", "label": "Father's Name", "type": "text", "required": true },
+        { "key": "Father Profession", "label": "Father's Profession", "type": "text" },
+        { "key": "Father Mobile", "label": "Father's Mobile No", "type": "tel", "required": true, "maxLength": 10 },
+        { "key": "Father Photo", "label": "Father's Photo (upload)", "type": "file", "accept": "image/*" },
+        { "key": "Mother Name", "label": "Mother's Name", "type": "text" },
+        { "key": "Mother Mobile", "label": "Mother's Mobile No", "type": "tel", "maxLength": 10 },
+        { "key": "Mother Photo", "label": "Mother's Photo (upload)", "type": "file", "accept": "image/*" },
+        { "key": "Address", "label": "Address", "type": "textarea", "full": true },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
+    },
+    {
+      "key": "fees",
+      "label": "Admission Fees",
+      "sheet": "Admission Fees",
+      "icon": "Receipt",
+      "autoId": true,
+      "idColumn": "Fee No",
+      "idPrefix": "FEE-",
+      "groupBy": "Fees Group",
+      "fields": [
+        { "key": "Session", "label": "Session", "type": "select", "required": true, "filterable": true, "options": ["2024-25", "2025-26", "2026-27", "2027-28"] },
+        { "key": "Fees Group", "label": "Fees Group", "type": "select", "required": true, "filterable": true, "options": ["Admission", "Tuition", "Transport", "Examination", "Annual", "Activity", "Other"] },
+        { "key": "Fees Type", "label": "Fees Type", "type": "select", "required": true, "filterable": true, "options": ["One Time", "Monthly", "Quarterly", "Half Yearly", "Yearly"] },
+        { "key": "Amount", "label": "Amount (Rs.)", "type": "number" },
+        { "key": "Class", "label": "Class", "type": "select", "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Section", "label": "Section", "type": "select", "filterable": true, "options": ["A", "B", "C", "D"] },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
+    },
+    {
+      "key": "feecollection",
+      "label": "Fee Collection",
+      "sheet": "Fee Collection",
+      "icon": "IndianRupee",
+      "autoId": true,
+      "idColumn": "Receipt No",
+      "idPrefix": "RC-",
+      "groupBy": "Status",
+      "printable": "receipt",
+      "whatsapp": {
+        "phoneField": "Father Mobile",
+        "label": "Reminder",
+        "onlyWhen": { "field": "Status", "equals": "Pending" },
+        "template": "Namaste 🙏\n{Student Name} (Class {Class}-{Section}) ke abhibhavak,\nAapke bachche ki {Session} satra ki {Month} mah ki fees Rs.{Amount} abhi BAKAYA (Pending) hai. Kripya sheeghra vidyalaya mein jama karein.\n\nDhanyavaad,\nBPS School"
+      },
+      "fields": [
+        { "key": "Admission No", "label": "Select Student", "type": "lookup", "required": true, "full": true, "lookupSheet": "Admissions", "lookupValueField": "Admission No", "lookupLabelFields": ["Admission No", "First Name", "Last Name", "Class"], "autofill": { "Student Name": ["First Name", "Last Name"], "Class": "Class", "Section": "Section", "Father Mobile": "Father Mobile" } },
+        { "key": "Student Name", "label": "Student Name", "type": "text", "required": true },
+        { "key": "Class", "label": "Class", "type": "select", "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Section", "label": "Section", "type": "select", "filterable": true, "options": ["A", "B", "C", "D"] },
+        { "key": "Session", "label": "Session", "type": "select", "required": true, "filterable": true, "options": ["2024-25", "2025-26", "2026-27", "2027-28"] },
+        { "key": "Month", "label": "Month", "type": "select", "required": true, "filterable": true, "options": ["April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February", "March"] },
+        { "key": "Amount", "label": "Amount (Rs.)", "type": "number" },
+        { "key": "Status", "label": "Status", "type": "select", "required": true, "filterable": true, "options": ["Paid", "Pending"] },
+        { "key": "Paid On", "label": "Paid On", "type": "date" },
+        { "key": "Father Mobile", "label": "Father's Mobile No", "type": "tel", "maxLength": 10 }
+      ]
+    },
+    {
+      "key": "subjects",
+      "label": "Subjects",
+      "sheet": "Subjects",
+      "icon": "BookOpen",
+      "autoId": true,
+      "idColumn": "Subject Code",
+      "idPrefix": "SUB-",
+      "groupBy": "Subject Name",
+      "fields": [
+        { "key": "Subject Name", "label": "Subject Name", "type": "text", "required": true },
+        { "key": "Applicable Classes", "label": "Applicable Classes", "type": "text", "placeholder": "e.g. 1 to 5" },
+        { "key": "Teacher Name", "label": "Assigned Teacher", "type": "lookup", "lookupSheet": "Teachers", "lookupValueField": "Name", "lookupLabelFields": ["Name", "Subject"] },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
+    },
+    {
+      "key": "teachers",
+      "label": "Teachers",
+      "sheet": "Teachers",
+      "icon": "UserCog",
+      "autoId": true,
+      "idColumn": "Teacher ID",
+      "idPrefix": "TCH-",
+      "groupBy": "Subject",
+      "fields": [
+        { "key": "Name", "label": "Teacher Name", "type": "text", "required": true },
+        { "key": "Mobile", "label": "Mobile No", "type": "tel", "maxLength": 10 },
+        { "key": "Email", "label": "Email", "type": "email" },
+        { "key": "Subject", "label": "Main Subject", "type": "lookup", "filterable": true, "lookupSheet": "Subjects", "lookupValueField": "Subject Name", "lookupLabelFields": ["Subject Name"] },
+        { "key": "Qualification", "label": "Qualification", "type": "text" },
+        { "key": "Photo", "label": "Photo (upload)", "type": "file", "accept": "image/*" },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
+    },
+    {
+      "key": "classes",
+      "label": "Classes",
+      "sheet": "Classes",
+      "icon": "School",
+      "autoId": true,
+      "idColumn": "Class ID",
+      "idPrefix": "CLS-",
+      "groupBy": "Class",
+      "fields": [
+        { "key": "Class", "label": "Class", "type": "select", "required": true, "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Section", "label": "Section", "type": "select", "required": true, "filterable": true, "options": ["A", "B", "C", "D"] },
+        { "key": "Class Teacher", "label": "Class Teacher", "type": "lookup", "filterable": true, "lookupSheet": "Teachers", "lookupValueField": "Name", "lookupLabelFields": ["Name", "Subject"] },
+        { "key": "Room No", "label": "Room No", "type": "text" },
+        { "key": "Remark", "label": "Remark", "type": "text" }
+      ]
+    },
+    {
+      "key": "timetable",
+      "label": "Timetable",
+      "sheet": "Timetable",
+      "icon": "CalendarClock",
+      "autoId": true,
+      "idColumn": "Timetable No",
+      "idPrefix": "TT-",
+      "groupBy": "Class",
+      "fields": [
+        { "key": "Class", "label": "Class", "type": "select", "required": true, "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Section", "label": "Section", "type": "select", "filterable": true, "options": ["A", "B", "C", "D"] },
+        { "key": "Day", "label": "Day", "type": "select", "required": true, "filterable": true, "options": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] },
+        { "key": "Period Time", "label": "Period / Time", "type": "text", "required": true, "placeholder": "e.g. 09:00 - 09:45" },
+        { "key": "Subject", "label": "Subject", "type": "lookup", "required": true, "filterable": true, "lookupSheet": "Subjects", "lookupValueField": "Subject Name", "lookupLabelFields": ["Subject Name"] },
+        { "key": "Teacher Name", "label": "Teacher", "type": "lookup", "required": true, "filterable": true, "lookupSheet": "Teachers", "lookupValueField": "Name", "lookupLabelFields": ["Name", "Subject"] },
+        { "key": "Remark", "label": "Remark", "type": "text" }
+      ]
+    },
+    {
+      "key": "families",
+      "label": "Family Register",
+      "sheet": "Family Register",
+      "icon": "Users",
+      "autoId": true,
+      "idColumn": "Family ID",
+      "idPrefix": "FAM-",
+      "groupBy": "No of Children",
+      "fields": [
+        { "key": "Father Name", "label": "Father's Name", "type": "text", "required": true },
+        { "key": "Mother Name", "label": "Mother's Name", "type": "text" },
+        { "key": "Father Mobile", "label": "Father's Mobile No", "type": "tel", "required": true, "maxLength": 10 },
+        { "key": "No of Children", "label": "No. of Children Studying", "type": "number", "filterable": true },
+        { "key": "Children Details", "label": "Children Names & Classes", "type": "textarea", "full": true, "placeholder": "e.g. Aarav - Class 3-A, Diya - Nursery" },
+        { "key": "Eldest Child", "label": "Eldest Child (priority)", "type": "text" },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
+    }
+  ]
+}
