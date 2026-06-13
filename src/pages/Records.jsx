@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { Plus, Search, Pencil, Trash2, Inbox, Filter, X as XIcon, MessageCircle, Download, Printer, ReceiptText, IdCard } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Inbox, Filter, X as XIcon, MessageCircle, Download, Printer, ReceiptText, IdCard, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { useDataStore } from '../store/dataStore';
 import { useAuthStore } from '../store/authStore';
 import RecordModal from '../components/RecordModal';
-import { getModule, APP_NAME, canEdit } from '../config';
+import {
+  getModule, SCHOOL_NAME, canEdit, canViewItem, firstAllowedPath,
+  scopeRows, visibleColumnIdx, isTeacher, teacherClasses, teacherSections,
+} from '../config';
 import { printReceipt, printIdCard, printTable } from '../utils/print';
 
 // Render a cell — clickable link for pasted Drive / image URLs, plain text otherwise.
@@ -65,10 +68,25 @@ const Records = () => {
     return <div className="bg-white rounded-lg border border-sky-200 p-10 text-center text-slate-500">Unknown page.</div>;
   }
 
-  const { headers, rows } = getSheet(mod.sheet);
+  // Role guard: e.g. teachers cannot open financial modules even via URL.
+  if (!canViewItem(user, { path: `/m/${mod.key}`, label: mod.label, moduleKey: mod.key })) {
+    return <Navigate to={firstAllowedPath(user)} replace />;
+  }
+
+  const { headers, rows: rawRows } = getSheet(mod.sheet);
+  // Row-level scoping: teachers see only their class, parents only their child.
+  const rows = scopeRows(user, mod, headers, rawRows);
+  // Column-level: teachers don't see sensitive columns (Aadhaar etc.).
+  const colIdx = visibleColumnIdx(user, headers);
+  const visibleHeaders = colIdx.map((i) => headers[i]);
   const loading = isLoading(mod.sheet);
   const ModIcon = Icons[mod.icon] || Icons.Table;
   const idIdx = headers.indexOf(mod.idColumn);
+
+  // Teacher scope label for the header ("Class 5-A").
+  const scopeLabel = isTeacher(user)
+    ? `${teacherClasses(user).map((c) => c.toUpperCase()).join(', ') || 'your class'}${teacherSections(user).length ? ' — Sec ' + teacherSections(user).map((s) => s.toUpperCase()).join('/') : ''}`
+    : '';
 
   // Fields the config marks as filterable -> dropdown filters above the table.
   const filterFields = (mod.fields || []).filter((f) => f.filterable);
@@ -114,9 +132,12 @@ const Records = () => {
     toast.success('Updated');
   };
 
+  // Export/print only the columns this user is allowed to see.
+  const projectRow = (r) => colIdx.map((i) => r[i]);
+
   const handleExport = () => {
     if (!headers.length) return toast.error('Nothing to export');
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...filtered]);
+    const ws = XLSX.utils.aoa_to_sheet([visibleHeaders, ...filtered.map(projectRow)]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, mod.label.slice(0, 31));
     XLSX.writeFile(wb, `${mod.label}.xlsx`);
@@ -125,7 +146,7 @@ const Records = () => {
 
   const handlePrintList = () => {
     if (!filtered.length) return toast.error('Nothing to print');
-    printTable(APP_NAME, mod.label, headers, filtered);
+    printTable(SCHOOL_NAME, mod.label, visibleHeaders, filtered.map(projectRow));
   };
 
   const handleDelete = async (row) => {
@@ -151,7 +172,10 @@ const Records = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">{mod.label}</h1>
-            <p className="text-xs text-slate-500">{rows.length} record{rows.length !== 1 ? 's' : ''} from Google Sheet</p>
+            <p className="text-xs text-slate-500">
+              {rows.length} record{rows.length !== 1 ? 's' : ''}
+              {scopeLabel && <span className="ml-1.5 inline-flex items-center gap-1 text-sky-700 font-semibold"><Lock size={11} /> {scopeLabel}</span>}
+            </p>
           </div>
         </div>
 
@@ -246,8 +270,8 @@ const Records = () => {
             <table className="w-full text-sm">
               <thead className="bg-sky-50 sticky top-0 z-10">
                 <tr>
-                  {headers.map((h, i) => (
-                    <th key={i} className="text-left font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">{h}</th>
+                  {colIdx.map((i) => (
+                    <th key={i} className="text-left font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">{headers[i]}</th>
                   ))}
                   <th className="text-right font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">Actions</th>
                 </tr>
@@ -258,7 +282,7 @@ const Records = () => {
                   const showWa = whatsAppApplies(mod.whatsapp, rowObj);
                   return (
                   <tr key={ri} className="hover:bg-sky-50/50 transition-colors border-b border-gray-100">
-                    {headers.map((_, ci) => (
+                    {colIdx.map((ci) => (
                       <td key={ci} className="px-4 py-2.5 text-gray-700 whitespace-nowrap"><Cell value={row[ci]} /></td>
                     ))}
                     <td className="px-4 py-2.5 whitespace-nowrap text-right">
@@ -276,7 +300,7 @@ const Records = () => {
                         )}
                         {mod.printable === 'receipt' && (
                           <button
-                            onClick={() => printReceipt(APP_NAME, rowObj)}
+                            onClick={() => printReceipt(SCHOOL_NAME, rowObj)}
                             className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
                             title="Print fee receipt"
                           >
@@ -285,7 +309,7 @@ const Records = () => {
                         )}
                         {mod.printable === 'idcard' && (
                           <button
-                            onClick={() => printIdCard(APP_NAME, rowObj)}
+                            onClick={() => printIdCard(SCHOOL_NAME, rowObj)}
                             className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
                             title="Print ID card"
                           >

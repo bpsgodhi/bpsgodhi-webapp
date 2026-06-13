@@ -1,13 +1,17 @@
 import React from 'react';
 import { Menu, RefreshCw } from 'lucide-react';
 import { useDataStore } from '../store/dataStore';
-import { MODULES } from '../config';
+import { MODULES, canViewItem } from '../config';
 
 const Header = ({ onMenuClick, user }) => {
   const { fetchData, loading } = useDataStore();
   const isSyncing = Object.values(loading).some(Boolean);
 
-  const syncAll = () => MODULES.forEach((m) => fetchData(m.sheet));
+  // Only sync the sheets this user is actually allowed to view.
+  const syncAll = () =>
+    MODULES
+      .filter((m) => canViewItem(user, { path: `/m/${m.key}`, label: m.label, moduleKey: m.key }))
+      .forEach((m) => fetchData(m.sheet));
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-sky-200">

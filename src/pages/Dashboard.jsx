@@ -8,7 +8,11 @@ import {
 } from 'recharts';
 import { useDataStore } from '../store/dataStore';
 import { useAuthStore } from '../store/authStore';
-import { MODULES, APP_NAME, getModule, canViewItem, firstAllowedPath } from '../config';
+import {
+  MODULES, APP_NAME, getModule, canViewItem, firstAllowedPath,
+  isTeacher, scopeRows, teacherClasses, teacherSections,
+} from '../config';
+import TeacherDashboard from './TeacherDashboard';
 
 const PIE_COLORS = ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 const CLASS_ORDER = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -26,6 +30,9 @@ const Dashboard = () => {
   }, [fetchData, allowed]);
 
   if (!allowed) return <Navigate to={firstAllowedPath(user)} replace />;
+
+  // Teachers get a class-scoped dashboard with no financial data.
+  if (isTeacher(user)) return <TeacherDashboard />;
 
   const admMod = getModule('admissions');
   const feeMod = getModule('feecollection');

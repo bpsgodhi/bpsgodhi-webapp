@@ -9,6 +9,8 @@ import Records from './pages/Records';
 import Setting from './pages/Setting';
 import MyFees from './pages/MyFees';
 import MyClass from './pages/MyClass';
+import MyStudents from './pages/MyStudents';
+import MyChild from './pages/MyChild';
 import { useAuthStore } from './store/authStore';
 import { firstAllowedPath } from './config';
 
@@ -38,6 +40,8 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             {/* One generic CRUD route serves every module via :key */}
             <Route path="m/:key" element={<Records />} />
+            <Route path="my-students" element={<MyStudents />} />
+            <Route path="my-child" element={<MyChild />} />
             <Route path="my-fees" element={<MyFees />} />
             <Route path="my-class" element={<MyClass />} />
             <Route path="setting" element={<Setting />} />

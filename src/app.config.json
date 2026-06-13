@@ -3,6 +3,30 @@
   "theme": "sky",
   "auth": true,
   "loginSheet": "Login",
+  "branding": {
+    "schoolName": "BPS School",
+    "shortName": "BPS School ERP",
+    "tagline": "Knowledge • Discipline • Excellence",
+    "logoIcon": "GraduationCap",
+    "primaryColor": "sky",
+    "address": "Main Road, Your City, State - 000000",
+    "phone": "+91 00000 00000",
+    "email": "info@bpsschool.edu.in",
+    "website": "www.bpsschool.edu.in",
+    "poweredBy": "Acemark",
+    "academicYear": "2025-26"
+  },
+  "access": {
+    "classField": "Class",
+    "sectionField": "Section",
+    "studentSheet": "Admissions",
+    "studentIdField": "Admission No",
+    "studentNameFields": ["First Name", "Last Name"],
+    "parentPhoneFields": ["Father Mobile", "Mother Mobile"],
+    "financialModules": ["fees", "feecollection"],
+    "teacherHiddenModules": ["fees", "feecollection", "families"],
+    "teacherHiddenFields": ["Aadhaar No", "Aadhaar Card", "Father Profession"]
+  },
   "modules": [
     {
       "key": "admissions",

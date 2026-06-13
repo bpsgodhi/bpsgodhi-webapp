@@ -1,7 +1,9 @@
 // =====================================================================
 //  Print helpers — open a clean print window and call print().
 //  Used for fee receipts, student ID cards, and table/list printing.
+//  School address / contact come from app.config.json -> branding.
 // =====================================================================
+import { BRANDING } from '../config';
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -32,8 +34,12 @@ const openPrint = (title, bodyHtml, extraCss = '') => {
   w.document.close();
 };
 
+const contactLine = [BRANDING.address, BRANDING.phone, BRANDING.email].filter(Boolean).join('  •  ');
+
 const docHead = (appName, subtitle) =>
-  `<div class="doc-head"><h1>${esc(appName)}</h1><p>${esc(subtitle)}</p></div>`;
+  `<div class="doc-head"><h1>${esc(appName)}</h1>` +
+  (contactLine ? `<p>${esc(contactLine)}</p>` : '') +
+  `<p style="font-weight:600;color:#0369a1;">${esc(subtitle)}</p></div>`;
 
 // ---- Fee receipt -----------------------------------------------------
 export const printReceipt = (appName, row) => {

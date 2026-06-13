@@ -4,7 +4,7 @@ import { User, Lock, Eye, EyeOff, GraduationCap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { fetchSheet } from '../utils/api';
-import { LOGIN_SHEET, APP_NAME } from '../config';
+import { LOGIN_SHEET, APP_NAME, BRANDING } from '../config';
 import Footer from '../components/Footer';
 
 const Login = () => {
@@ -24,7 +24,8 @@ const Login = () => {
     setSubmitting(true);
     try {
       // Login columns: 0 Timestamp,1 Serial No,2 Full Name,3 Contact No,
-      // 4 Email,5 Designation,6 User ID,7 Password,8 Role,9 Page Access
+      // 4 Email,5 Designation,6 User ID,7 Password,8 Role,9 Page Access,
+      // 10 Edit Access,11 Scope Class,12 Scope Section
       const data = await fetchSheet(LOGIN_SHEET);
       const users = data.slice(1).map((row) => ({
         id: String(row[6] ?? '').trim(),
@@ -35,6 +36,8 @@ const Login = () => {
         role: row[8] ? String(row[8]).toUpperCase() : 'USER',
         pageAccess: row[9] || '',
         editAccess: row[10] || '',
+        scopeClass: row[11] || '',
+        scopeSection: row[12] || '',
       }));
 
       const matched = users.find((u) => u.id === id.trim() && u.pass === password);
@@ -53,6 +56,8 @@ const Login = () => {
         designation: matched.designation,
         pageAccess: matched.pageAccess,
         editAccess: matched.editAccess,
+        scopeClass: matched.scopeClass,
+        scopeSection: matched.scopeSection,
       });
       navigate('/', { replace: true });
     } catch (err) {
@@ -73,7 +78,8 @@ const Login = () => {
             </div>
             <div className="text-center space-y-1">
               <h1 className="text-3xl font-semibold text-gray-900">{APP_NAME}</h1>
-              <p className="text-gray-600 text-base font-medium">School Management — Login to continue</p>
+              {BRANDING.tagline && <p className="text-sky-600 text-xs font-semibold tracking-wide uppercase">{BRANDING.tagline}</p>}
+              <p className="text-gray-600 text-base font-medium">Sign in to continue</p>
             </div>
           </div>
 
