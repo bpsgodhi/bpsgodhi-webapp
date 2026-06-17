@@ -200,6 +200,22 @@
         { "key": "Eldest Child", "label": "Eldest Child (priority)", "type": "text" },
         { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
       ]
+    },
+    {
+      "key": "siteinquiry",
+      "label": "Site Inquiry",
+      "sheet": "Site Inquiry",
+      "icon": "MessageSquareText",
+      "autoId": false,
+      "idColumn": "Timestamp",
+      "groupBy": "Class Inquiry",
+      "fields": [
+        { "key": "Enter Your Name", "label": "Enter Your Name", "type": "text", "required": true },
+        { "key": "Mobile No.", "label": "Mobile No.", "type": "tel", "required": true, "maxLength": 10 },
+        { "key": "Address", "label": "Address", "type": "textarea", "full": true },
+        { "key": "Class Inquiry", "label": "Class Inquiry", "type": "select", "filterable": true, "options": ["Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] },
+        { "key": "Remark", "label": "Remark", "type": "textarea", "full": true }
+      ]
     }
   ]
 }
