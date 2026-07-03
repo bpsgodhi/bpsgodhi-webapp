@@ -116,13 +116,13 @@ const MyFees = () => {
               <p className="p-6 text-center text-sm text-slate-400">No fee records yet.</p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-sky-50">
                   <tr>
-                    <th className="text-left font-bold text-slate-600 px-4 py-2.5">Month</th>
-                    <th className="text-left font-bold text-slate-600 px-4 py-2.5">Session</th>
-                    <th className="text-left font-bold text-slate-600 px-4 py-2.5">Amount</th>
-                    <th className="text-left font-bold text-slate-600 px-4 py-2.5">Paid On</th>
-                    <th className="text-left font-bold text-slate-600 px-4 py-2.5">Status</th>
+                    <th className="text-left font-bold text-sky-700 px-4 py-2.5 border-b border-sky-200">Month</th>
+                    <th className="text-left font-bold text-sky-700 px-4 py-2.5 border-b border-sky-200">Session</th>
+                    <th className="text-left font-bold text-sky-700 px-4 py-2.5 border-b border-sky-200">Amount</th>
+                    <th className="text-left font-bold text-sky-700 px-4 py-2.5 border-b border-sky-200">Paid On</th>
+                    <th className="text-left font-bold text-sky-700 px-4 py-2.5 border-b border-sky-200">Status</th>
                   </tr>
                 </thead>
                 <tbody>

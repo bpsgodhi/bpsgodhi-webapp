@@ -1,17 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useSearchParams } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { Plus, Search, Pencil, Trash2, Inbox, Filter, X as XIcon, MessageCircle, Download, Printer, ReceiptText, IdCard, Lock } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Inbox, Filter, X as XIcon, MessageCircle, Download, Printer, ReceiptText, IdCard, Lock, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { useDataStore } from '../store/dataStore';
 import { useAuthStore } from '../store/authStore';
+import { confirm } from '../store/uiStore';
 import RecordModal from '../components/RecordModal';
+import { SkeletonTable } from '../components/Skeleton';
 import {
   getModule, SCHOOL_NAME, canEdit, canViewItem, firstAllowedPath,
   scopeRows, visibleColumnIdx, isTeacher, teacherClasses, teacherSections,
 } from '../config';
 import { printReceipt, printIdCard, printTable } from '../utils/print';
+
+const PAGE_SIZE = 25;
 
 // Render a cell — clickable link for pasted Drive / image URLs, plain text otherwise.
 const Cell = ({ value }) => {
@@ -54,15 +58,24 @@ const Records = () => {
   const editable = canEdit(user, mod?.label);
   const { getSheet, isLoading, fetchData, addRecord, editRecord, removeRecord } = useDataStore();
 
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState({}); // { fieldKey: selectedValue }
   const [modal, setModal] = useState(null); // { mode, initial }
+  const [sort, setSort] = useState({ idx: null, dir: 1 }); // header index + direction
+  const [page, setPage] = useState(1);
+  const [hiddenCols, setHiddenCols] = useState(() => new Set());
+  const [showColMenu, setShowColMenu] = useState(false);
 
   useEffect(() => {
     if (mod) fetchData(mod.sheet);
-    setQuery('');
+    // Deep-link: /m/<key>?q=<term> (from global search) pre-fills the search.
+    setQuery(searchParams.get('q') || '');
     setFilters({});
-  }, [mod, fetchData]);
+    setSort({ idx: null, dir: 1 });
+    setPage(1);
+    setHiddenCols(new Set());
+  }, [mod, fetchData, searchParams]);
 
   if (!mod) {
     return <div className="bg-white rounded-lg border border-sky-200 p-10 text-center text-slate-500">Unknown page.</div>;
@@ -79,6 +92,8 @@ const Records = () => {
   // Column-level: teachers don't see sensitive columns (Aadhaar etc.).
   const colIdx = visibleColumnIdx(user, headers);
   const visibleHeaders = colIdx.map((i) => headers[i]);
+  // Columns actually shown in the table (user can hide some for a cleaner view).
+  const shownColIdx = colIdx.filter((i) => !hiddenCols.has(i));
   const loading = isLoading(mod.sheet);
   const ModIcon = Icons[mod.icon] || Icons.Table;
   const idIdx = headers.indexOf(mod.idColumn);
@@ -119,6 +134,36 @@ const Records = () => {
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
+  // Column sort (numeric-aware: "10" sorts after "9", dates/strings natural).
+  const sorted = useMemo(() => {
+    if (sort.idx == null) return filtered;
+    const idx = sort.idx;
+    const asNum = (v) => {
+      const s = String(v ?? '').trim();
+      if (!s) return null;
+      const n = Number(s.replace(/[^\d.-]/g, ''));
+      return Number.isFinite(n) && /\d/.test(s) ? n : null;
+    };
+    return [...filtered].sort((a, b) => {
+      const an = asNum(a[idx]), bn = asNum(b[idx]);
+      let c;
+      if (an !== null && bn !== null) c = an - bn;
+      else c = String(a[idx] ?? '').localeCompare(String(b[idx] ?? ''), undefined, { numeric: true, sensitivity: 'base' });
+      return c * sort.dir;
+    });
+  }, [filtered, sort]);
+
+  // Pagination.
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset to first page whenever the result set changes.
+  useEffect(() => { setPage(1); }, [query, filters, sort]);
+
+  const toggleSort = (i) =>
+    setSort((s) => (s.idx === i ? { idx: i, dir: -s.dir } : { idx: i, dir: 1 }));
+
   const rowToObject = (row) => headers.reduce((acc, h, i) => ({ ...acc, [h]: row[i] }), {});
 
   const handleAdd = async (form) => {
@@ -152,7 +197,13 @@ const Records = () => {
   const handleDelete = async (row) => {
     const matchValue = idIdx >= 0 ? row[idIdx] : null;
     if (matchValue == null) return toast.error('No ID column to delete by');
-    if (!window.confirm(`Delete this ${mod.label.replace(/s$/, '')}?`)) return;
+    const ok = await confirm({
+      title: `Delete this ${mod.label.replace(/s$/, '')}?`,
+      message: 'This will permanently remove the record from the sheet. This cannot be undone.',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await removeRecord(mod, matchValue);
       toast.success('Deleted');
@@ -204,6 +255,38 @@ const Records = () => {
           >
             <Printer size={17} /> <span className="hidden sm:inline">Print</span>
           </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowColMenu((v) => !v)}
+              title="Show / hide columns"
+              className="px-3 py-2.5 rounded-lg border border-sky-200 text-sky-700 bg-sky-50/50 hover:bg-sky-100 font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <SlidersHorizontal size={17} /> <span className="hidden lg:inline">Columns</span>
+            </button>
+            {showColMenu && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowColMenu(false)} />
+                <div className="absolute right-0 mt-1 w-56 max-h-72 overflow-y-auto bg-white border border-sky-200 rounded-xl shadow-xl z-30 p-2 scrollbar-hide">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase px-2 py-1">Show columns</p>
+                  {colIdx.map((i) => (
+                    <label key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-sky-50 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!hiddenCols.has(i)}
+                        onChange={() => setHiddenCols((prev) => {
+                          const next = new Set(prev);
+                          next.has(i) ? next.delete(i) : next.add(i);
+                          return next;
+                        })}
+                        className="accent-sky-600"
+                      />
+                      <span className="truncate text-gray-700">{headers[i]}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           {editable ? (
             <button
               onClick={() => setModal({ mode: 'add', initial: null })}
@@ -251,11 +334,8 @@ const Records = () => {
       {/* Table */}
       <div className="bg-white rounded-lg border border-sky-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
         <div className="overflow-auto flex-1">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
-              <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm">Loading...</span>
-            </div>
+          {loading && headers.length === 0 ? (
+            <div className="p-3"><SkeletonTable rows={9} cols={Math.min(6, (mod.fields?.length || 5))} /></div>
           ) : headers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
               <Inbox size={36} />
@@ -270,19 +350,29 @@ const Records = () => {
             <table className="w-full text-sm">
               <thead className="bg-sky-50 sticky top-0 z-10">
                 <tr>
-                  {colIdx.map((i) => (
-                    <th key={i} className="text-left font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">{headers[i]}</th>
-                  ))}
+                  {shownColIdx.map((i) => {
+                    const isSorted = sort.idx === i;
+                    return (
+                      <th key={i} className="text-left font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">
+                        <button onClick={() => toggleSort(i)} className="inline-flex items-center gap-1 hover:text-sky-900 group">
+                          {headers[i]}
+                          {isSorted
+                            ? (sort.dir === 1 ? <ChevronUp size={14} /> : <ChevronDown size={14} />)
+                            : <ChevronsUpDown size={13} className="text-sky-300 group-hover:text-sky-500" />}
+                        </button>
+                      </th>
+                    );
+                  })}
                   <th className="text-right font-bold text-sky-700 px-4 py-3 whitespace-nowrap border-b border-sky-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((row, ri) => {
+                {paged.map((row, ri) => {
                   const rowObj = rowToObject(row);
                   const showWa = whatsAppApplies(mod.whatsapp, rowObj);
                   return (
-                  <tr key={ri} className="hover:bg-sky-50/50 transition-colors border-b border-gray-100">
-                    {colIdx.map((ci) => (
+                  <tr key={row[idIdx] ?? ri} className="hover:bg-sky-50/50 transition-colors border-b border-gray-100">
+                    {shownColIdx.map((ci) => (
                       <td key={ci} className="px-4 py-2.5 text-gray-700 whitespace-nowrap"><Cell value={row[ci]} /></td>
                     ))}
                     <td className="px-4 py-2.5 whitespace-nowrap text-right">
@@ -343,6 +433,34 @@ const Records = () => {
             </table>
           )}
         </div>
+
+        {/* Pagination footer */}
+        {!loading && sorted.length > 0 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-sky-100 bg-sky-50/40 text-xs text-slate-500">
+            <span>
+              Showing <b className="text-slate-700">{(safePage - 1) * PAGE_SIZE + 1}</b>–<b className="text-slate-700">{Math.min(safePage * PAGE_SIZE, sorted.length)}</b> of <b className="text-slate-700">{sorted.length}</b>
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="p-1.5 rounded-lg border border-sky-200 text-sky-700 hover:bg-sky-100 disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="px-2 font-semibold text-slate-600">Page {safePage} / {totalPages}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="p-1.5 rounded-lg border border-sky-200 text-sky-700 hover:bg-sky-100 disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {modal && (

@@ -53,7 +53,7 @@ const TeacherDashboard = () => {
   const scopeText = `${classes.map((c) => c.toUpperCase()).join(', ') || 'Not assigned'}${sections.length ? ' — Sec ' + sections.map((s) => s.toUpperCase()).join('/') : ''}`;
 
   const cards = [
-    { label: 'My Students', value: stats.total, icon: Users, color: '#0ea5e9' },
+    { label: 'My Students', value: stats.total, icon: Users, color: '#16437f' },
     { label: 'Boys', value: stats.boys, icon: User, color: '#6366f1' },
     { label: 'Girls', value: stats.girls, icon: UserRound, color: '#ec4899' },
     { label: 'Subjects', value: stats.subjects.length, icon: BookOpen, color: '#10b981' },
@@ -101,7 +101,7 @@ const TeacherDashboard = () => {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Bar dataKey="students" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="students" fill="#16437f" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

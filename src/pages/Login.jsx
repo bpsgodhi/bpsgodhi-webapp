@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, GraduationCap } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { fetchSheet } from '../utils/api';
@@ -73,8 +73,8 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
           <div className="flex flex-col items-center space-y-3">
-            <div className="w-14 h-14 bg-sky-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <GraduationCap size={28} className="text-white" />
+            <div className="w-20 h-20 flex items-center justify-center">
+              <img src="/bps-logo.svg" alt={APP_NAME} className="w-full h-full object-contain" />
             </div>
             <div className="text-center space-y-1">
               <h1 className="text-3xl font-semibold text-gray-900">{APP_NAME}</h1>

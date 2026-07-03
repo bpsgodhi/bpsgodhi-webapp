@@ -11,12 +11,12 @@ const esc = (s) =>
 const BASE_CSS = `
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 24px; }
-  .doc-head { text-align:center; border-bottom:3px solid #0284c7; padding-bottom:12px; margin-bottom:20px; }
-  .doc-head h1 { margin:0; color:#0284c7; font-size:24px; letter-spacing:.5px; }
+  .doc-head { text-align:center; border-bottom:3px solid #16437f; padding-bottom:12px; margin-bottom:20px; }
+  .doc-head h1 { margin:0; color:#16437f; font-size:24px; letter-spacing:.5px; }
   .doc-head p { margin:2px 0 0; color:#64748b; font-size:12px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th,td { border:1px solid #cbd5e1; padding:8px 10px; text-align:left; }
-  th { background:#e0f2fe; color:#0369a1; }
+  th { background:#dde8f6; color:#0b2e60; }
   .muted { color:#64748b; }
   @media print { .no-print { display:none; } body { padding:0; } }
 `;
@@ -35,11 +35,20 @@ const openPrint = (title, bodyHtml, extraCss = '') => {
 };
 
 const contactLine = [BRANDING.address, BRANDING.phone, BRANDING.email].filter(Boolean).join('  •  ');
+// Absolute URL so the logo resolves inside the blank print window.
+const LOGO_URL = (typeof window !== 'undefined' ? window.location.origin : '') + '/bps-logo.svg';
 
 const docHead = (appName, subtitle) =>
-  `<div class="doc-head"><h1>${esc(appName)}</h1>` +
-  (contactLine ? `<p>${esc(contactLine)}</p>` : '') +
-  `<p style="font-weight:600;color:#0369a1;">${esc(subtitle)}</p></div>`;
+  `<div class="doc-head">
+     <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+       <img src="${LOGO_URL}" alt="" style="height:60px;width:60px;object-fit:contain;" onerror="this.style.display='none'">
+       <div style="text-align:left;">
+         <h1>${esc(appName)}</h1>
+         ${contactLine ? `<p>${esc(contactLine)}</p>` : ''}
+       </div>
+     </div>
+     <p style="font-weight:600;color:#0b2e60;margin-top:10px;">${esc(subtitle)}</p>
+   </div>`;
 
 // ---- Fee receipt -----------------------------------------------------
 export const printReceipt = (appName, row) => {
@@ -81,10 +90,11 @@ export const printIdCard = (appName, row) => {
     ? `<img src="${esc(photo)}" alt="photo" style="width:90px;height:110px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;">`
     : `<div style="width:90px;height:110px;border-radius:6px;border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;">Photo</div>`;
 
-  const field = (k, v) => `<div style="margin:3px 0;"><b style="color:#0369a1;">${esc(k)}:</b> ${esc(v || '—')}</div>`;
+  const field = (k, v) => `<div style="margin:3px 0;"><b style="color:#0b2e60;">${esc(k)}:</b> ${esc(v || '—')}</div>`;
   const body = `
-    <div style="width:340px;margin:0 auto;border:2px solid #0284c7;border-radius:12px;overflow:hidden;">
-      <div style="background:#0284c7;color:#fff;text-align:center;padding:10px;">
+    <div style="width:340px;margin:0 auto;border:2px solid #16437f;border-radius:12px;overflow:hidden;">
+      <div style="background:#16437f;color:#fff;text-align:center;padding:10px;">
+        <img src="${LOGO_URL}" alt="" style="height:36px;width:36px;object-fit:contain;background:#fff;border-radius:6px;padding:2px;margin-bottom:4px;" onerror="this.style.display='none'">
         <div style="font-size:18px;font-weight:bold;">${esc(appName)}</div>
         <div style="font-size:11px;opacity:.9;">Student Identity Card</div>
       </div>
@@ -98,7 +108,7 @@ export const printIdCard = (appName, row) => {
           ${field('Mobile', row['Father Mobile'])}
         </div>
       </div>
-      <div style="background:#e0f2fe;color:#0369a1;font-size:10px;text-align:center;padding:6px;">${esc(row['Address'] || '')}</div>
+      <div style="background:#dde8f6;color:#0b2e60;font-size:10px;text-align:center;padding:6px;">${esc(row['Address'] || '')}</div>
     </div>`;
   openPrint(`ID Card ${row['Admission No'] || ''}`, body);
 };

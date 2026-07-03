@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { LogOut as LogOutIcon, X, GraduationCap } from 'lucide-react';
+import { LogOut as LogOutIcon, X } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { visibleMenuItems, APP_NAME } from '../config';
 
@@ -34,8 +34,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex flex-col h-full">
           <div className="p-5 border-b border-sky-200 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center shrink-0">
-                <GraduationCap size={18} className="text-white" />
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                <img src="/bps-logo.svg" alt={APP_NAME} className="w-full h-full object-contain" />
               </div>
               <span className="text-base font-bold text-sky-600 tracking-tight leading-tight truncate">{APP_NAME}</span>
             </div>
@@ -53,8 +53,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
                   ${isActive
-                    ? 'bg-sky-100 text-sky-600 border-l-4 border-sky-600'
-                    : 'text-gray-700 hover:bg-sky-50 hover:text-sky-600 border-l-4 border-transparent'}
+                    ? 'bg-sky-100 text-sky-700 font-semibold border-l-4 border-gold-400'
+                    : 'text-gray-700 hover:bg-sky-50 hover:text-sky-700 border-l-4 border-transparent'}
                 `}
               >
                 <Icon name={item.icon} size={20} className="group-hover:scale-110 transition-transform" />

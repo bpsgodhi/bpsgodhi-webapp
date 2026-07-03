@@ -2,13 +2,43 @@ import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { fetchSheet, insertRow, updateRow, deleteRow } from '../utils/api';
 
-// Generic per-sheet cache: sheets[sheetName] = { headers, rows }
+// =====================================================================
+//  Generic per-sheet cache with offline persistence.
+//  sheets[sheetName] = { headers, rows, ts }
+//
+//  Data is mirrored to localStorage so the app opens INSTANTLY with the
+//  last-known data and keeps working even when the Google Sheet sync is
+//  slow or fails (network / Apps Script hiccup). A background refresh
+//  updates it silently; on failure we keep showing the cached copy.
+// =====================================================================
+const CACHE_KEY = 'bps-sheet-cache';
+
+const loadCache = () => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveCache = (sheets) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(sheets));
+  } catch {
+    /* quota exceeded — ignore, cache is best-effort */
+  }
+};
+
 const useDataStore = create((set, get) => ({
-  sheets: {},
+  sheets: loadCache(), // hydrate from last session → instant first paint
   loading: {},
 
   getSheet: (name) => get().sheets[name] || { headers: [], rows: [] },
   isLoading: (name) => !!get().loading[name],
+  // True only while a FIRST-EVER load is running (no cached data yet).
+  isColdLoading: (name) => !!get().loading[name] && !get().sheets[name],
+  lastSync: (name) => get().sheets[name]?.ts || null,
 
   fetchData: async (sheetName) => {
     set((s) => ({ loading: { ...s.loading, [sheetName]: true } }));
@@ -20,13 +50,17 @@ const useDataStore = create((set, get) => ({
         headers = data[0];
         rows = data.slice(1).reverse(); // newest first
       }
-      set((s) => ({
-        sheets: { ...s.sheets, [sheetName]: { headers, rows } },
-        loading: { ...s.loading, [sheetName]: false },
-      }));
+      set((s) => {
+        const sheets = { ...s.sheets, [sheetName]: { headers, rows, ts: Date.now() } };
+        saveCache(sheets);
+        return { sheets, loading: { ...s.loading, [sheetName]: false } };
+      });
     } catch (err) {
       console.error(err);
-      toast.error(`Could not load "${sheetName}" from sheet`);
+      // Only surface an error if we have NOTHING cached to show.
+      if (!get().sheets[sheetName]) {
+        toast.error(`Could not load "${sheetName}"`);
+      }
       set((s) => ({ loading: { ...s.loading, [sheetName]: false } }));
     }
   },

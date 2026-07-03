@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
-import { GraduationCap, IndianRupee, AlertCircle, Users } from 'lucide-react';
+import {
+  GraduationCap, IndianRupee, AlertCircle, Users, Wallet, UserPlus,
+  Cake, CalendarDays, ArrowRight, Clock,
+} from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -12,17 +15,24 @@ import {
   MODULES, APP_NAME, getModule, canViewItem, firstAllowedPath,
   isTeacher, scopeRows, teacherClasses, teacherSections,
 } from '../config';
+import { SkeletonCards } from '../components/Skeleton';
 import TeacherDashboard from './TeacherDashboard';
 
-const PIE_COLORS = ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const PIE_COLORS = ['#16437f', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 const CLASS_ORDER = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 const num = (v) => Number(String(v ?? '').replace(/[^\d.]/g, '')) || 0;
 const toObjs = (sheet) => sheet.rows.map((r) => sheet.headers.reduce((a, h, i) => ((a[h] = r[i]), a), {}));
+const parseDate = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 const Dashboard = () => {
-  const { sheets, fetchData, getSheet } = useDataStore();
+  const { sheets, fetchData, getSheet, isColdLoading } = useDataStore();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const allowed = canViewItem(user, { path: '/dashboard', label: 'Dashboard' });
 
   useEffect(() => {
@@ -42,10 +52,24 @@ const Dashboard = () => {
     const students = admMod ? toObjs(getSheet(admMod.sheet)) : [];
     const fees = feeMod ? toObjs(getSheet(feeMod.sheet)) : [];
     const families = famMod ? getSheet(famMod.sheet).rows.length : 0;
+    const today = new Date();
 
     const collected = fees.filter((f) => f['Status'] === 'Paid').reduce((s, f) => s + num(f['Amount']), 0);
     const pending = fees.filter((f) => f['Status'] === 'Pending').reduce((s, f) => s + num(f['Amount']), 0);
     const pendingCount = fees.filter((f) => f['Status'] === 'Pending').length;
+
+    // Today / this-month highlights.
+    const collectedToday = fees
+      .filter((f) => f['Status'] === 'Paid' && parseDate(f['Paid On'])?.toDateString() === today.toDateString())
+      .reduce((s, f) => s + num(f['Amount']), 0);
+    const admissionsThisMonth = students.filter((s) => {
+      const d = parseDate(s['Timestamp']);
+      return d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    }).length;
+    const birthdays = students.filter((s) => {
+      const d = parseDate(s['Date of Birth']);
+      return d && d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+    });
 
     // Students per class.
     const clsMap = {};
@@ -59,6 +83,8 @@ const Dashboard = () => {
     return {
       totalStudents: students.length,
       collected, pending, pendingCount, families,
+      collectedToday, admissionsThisMonth, birthdays,
+      recent: students.slice(0, 5), // rows are already newest-first
       byClass,
       feePie: [
         { name: 'Collected', value: collected },
@@ -67,38 +93,93 @@ const Dashboard = () => {
     };
   }, [sheets]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const cold = isColdLoading(admMod?.sheet) && stats.totalStudents === 0;
+  const rupee = (n) => `Rs. ${Number(n).toLocaleString('en-IN')}`;
+
   const cards = [
-    { label: 'Total Students', value: stats.totalStudents, icon: GraduationCap, color: '#0ea5e9' },
-    { label: 'Fees Collected', value: `Rs. ${stats.collected.toLocaleString('en-IN')}`, icon: IndianRupee, color: '#10b981' },
-    { label: 'Fees Pending', value: `Rs. ${stats.pending.toLocaleString('en-IN')}`, icon: AlertCircle, color: '#ef4444', sub: `${stats.pendingCount} pending dues` },
-    { label: 'Families', value: stats.families, icon: Users, color: '#6366f1' },
+    { label: 'Total Students', value: stats.totalStudents, icon: GraduationCap, color: '#16437f', to: admMod && `/m/${admMod.key}` },
+    { label: 'Fees Collected', value: rupee(stats.collected), icon: IndianRupee, color: '#10b981', to: feeMod && `/m/${feeMod.key}` },
+    { label: 'Fees Pending', value: rupee(stats.pending), icon: AlertCircle, color: '#ef4444', sub: `${stats.pendingCount} pending dues`, to: feeMod && `/m/${feeMod.key}` },
+    { label: 'Families', value: stats.families, icon: Users, color: '#6366f1', to: famMod && `/m/${famMod.key}` },
   ];
+
+  // Quick actions — jump straight to the busiest modules.
+  const quickActions = [
+    { label: 'New Admission', icon: UserPlus, key: 'admissions' },
+    { label: 'Collect Fee', icon: Wallet, key: 'feecollection' },
+    { label: 'Teachers', icon: Icons.UserCog, key: 'teachers' },
+    { label: 'Timetable', icon: Icons.CalendarClock, key: 'timetable' },
+  ].filter((a) => getModule(a.key));
+
+  const studentName = (s) => `${s['First Name'] || ''} ${s['Last Name'] || ''}`.trim() || '(unnamed)';
 
   return (
     <div className="space-y-3">
-      <div className="bg-gradient-to-r from-sky-600 to-sky-500 rounded-lg shadow-sm p-5 text-white">
-        <h1 className="text-xl font-bold flex items-center gap-2"><GraduationCap size={24} /> {APP_NAME}</h1>
-        <p className="text-sm text-sky-100">School overview — students, fees & academics at a glance</p>
+      {/* Hero + today's snapshot */}
+      <div className="bg-gradient-to-r from-sky-700 to-sky-500 rounded-xl shadow-sm p-5 text-white">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <span className="w-7 h-7 bg-white rounded-md flex items-center justify-center p-0.5"><img src="/bps-logo.svg" alt="" className="w-full h-full object-contain" /></span>
+              {APP_NAME}
+            </h1>
+            <p className="text-sm text-sky-100 mt-0.5">School overview — students, fees & academics at a glance</p>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="text-center">
+              <p className="text-lg font-bold leading-none">{rupee(stats.collectedToday)}</p>
+              <p className="text-[11px] text-sky-100 mt-1">Collected today</p>
+            </div>
+            <div className="w-px h-8 bg-white/30" />
+            <div className="text-center">
+              <p className="text-lg font-bold leading-none">{stats.admissionsThisMonth}</p>
+              <p className="text-[11px] text-sky-100 mt-1">Admissions this month</p>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Quick actions */}
+      {quickActions.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {quickActions.map((a) => (
+            <button
+              key={a.key}
+              onClick={() => navigate(`/m/${a.key}`)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-sky-200 shadow-sm text-sky-700 font-semibold text-sm hover:bg-sky-50 hover:border-sky-300 transition-all"
+            >
+              <a.icon size={16} /> {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {cards.map((c) => {
-          const I = c.icon;
-          return (
-            <div key={c.label} className="bg-white rounded-lg border border-sky-200 shadow-sm p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
-                <I size={24} className="text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl font-bold text-gray-900 leading-none truncate">{c.value}</p>
-                <p className="text-xs font-medium text-slate-500 mt-1">{c.label}</p>
-                {c.sub && <p className="text-[10px] text-red-500 font-semibold mt-0.5">{c.sub}</p>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {cold ? (
+        <SkeletonCards count={4} />
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {cards.map((c) => {
+            const I = c.icon;
+            return (
+              <button
+                key={c.label}
+                onClick={() => c.to && navigate(c.to)}
+                className="text-left bg-white rounded-lg border border-sky-200 shadow-sm p-4 flex items-center gap-4 hover:shadow-md hover:border-sky-300 transition-all"
+              >
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: c.color }}>
+                  <I size={24} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl font-bold text-gray-900 leading-none truncate">{c.value}</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">{c.label}</p>
+                  {c.sub && <p className="text-[10px] text-red-500 font-semibold mt-0.5">{c.sub}</p>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Students by class */}
@@ -114,7 +195,7 @@ const Dashboard = () => {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Bar dataKey="students" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="students" fill="#16437f" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -143,6 +224,58 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Recent admissions + birthdays */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 bg-white rounded-lg border border-sky-200 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Clock size={15} className="text-sky-600" /> Recent Admissions</h2>
+            {admMod && <button onClick={() => navigate(`/m/${admMod.key}`)} className="text-xs font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-0.5">View all <ArrowRight size={13} /></button>}
+          </div>
+          {stats.recent.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No admissions yet.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {stats.recent.map((s, i) => (
+                <div key={i} className="flex items-center gap-3 py-2.5">
+                  <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0">
+                    {studentName(s).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{studentName(s)}</p>
+                    <p className="text-[11px] text-slate-500">{s['Admission No'] || '—'}</p>
+                  </div>
+                  <span className="text-xs font-medium text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full shrink-0">
+                    {s['Class'] ? `${s['Class']}${s['Section'] ? '-' + s['Section'] : ''}` : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg border border-sky-200 shadow-sm p-4">
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mb-3"><Cake size={15} className="text-pink-500" /> Birthdays Today</h2>
+          {stats.birthdays.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-2">
+              <CalendarDays size={28} />
+              <span className="text-xs">No birthdays today</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {stats.birthdays.map((s, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-pink-50 border border-pink-100">
+                  <Cake size={16} className="text-pink-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{studentName(s)}</p>
+                    <p className="text-[11px] text-slate-500">{s['Class'] ? `Class ${s['Class']}${s['Section'] ? '-' + s['Section'] : ''}` : ''}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Per-module record counts */}
       <div className="bg-white rounded-lg border border-sky-200 shadow-sm p-4">
         <h2 className="text-sm font-bold text-gray-900 mb-3">Records per Section</h2>
@@ -150,13 +283,17 @@ const Dashboard = () => {
           {MODULES.map((m, i) => {
             const I = Icons[m.icon] || Icons.Table;
             return (
-              <div key={m.key} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+              <button
+                key={m.key}
+                onClick={() => navigate(`/m/${m.key}`)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100 hover:bg-sky-50 hover:border-sky-200 transition-all text-left"
+              >
                 <I size={18} style={{ color: PIE_COLORS[i % PIE_COLORS.length] }} />
                 <div>
                   <p className="text-base font-bold text-gray-900 leading-none">{getSheet(m.sheet).rows.length}</p>
                   <p className="text-[10px] text-slate-500">{m.label}</p>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

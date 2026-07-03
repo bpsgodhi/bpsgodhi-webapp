@@ -7,6 +7,7 @@ import {
   PARENT_PORTAL_LABELS,
 } from '../config';
 import { useAuthStore } from '../store/authStore';
+import { confirm } from '../store/uiStore';
 
 const blankUser = {
   'Full Name': '', 'Contact No': '', Email: '', Designation: '',
@@ -95,7 +96,13 @@ const Setting = () => {
 
   const handleDelete = async (row) => {
     if (String(row[6]) === String(user?.username)) return toast.error("You can't delete your own account");
-    if (!window.confirm(`Delete user "${row[2] || row[6]}"?`)) return;
+    const ok = await confirm({
+      title: `Delete user "${row[2] || row[6]}"?`,
+      message: 'This user will lose access immediately. This cannot be undone.',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteRow(LOGIN_SHEET, 'User ID', row[6]);
       toast.success('User deleted');
