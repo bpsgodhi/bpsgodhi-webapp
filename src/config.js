@@ -11,6 +11,8 @@ export const BRANDING = appConfig.branding || {};
 // Product/app title (shown in sidebar, login, browser). Institution name
 // (used on receipts, ID cards, reports) is SCHOOL_NAME.
 export const APP_NAME = BRANDING.shortName || appConfig.appName || 'School ERP';
+// Compact name for tight spots like the sidebar header (mobile/desktop).
+export const APP_SHORT_NAME = BRANDING.miniName || APP_NAME;
 export const SCHOOL_NAME = BRANDING.schoolName || appConfig.appName || 'School';
 export const THEME = appConfig.theme || BRANDING.primaryColor || 'sky';
 

@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { LogOut as LogOutIcon, X } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { visibleMenuItems, APP_NAME } from '../config';
+import { visibleMenuItems, APP_SHORT_NAME } from '../config';
 
 // Resolve a lucide icon by its string name, with a safe fallback.
 const Icon = ({ name, ...props }) => {
@@ -35,9 +35,9 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="p-5 border-b border-sky-200 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                <img src="/bps-logo.svg" alt={APP_NAME} className="w-full h-full object-contain" />
+                <img src="/bps-logo.svg" alt={APP_SHORT_NAME} className="w-full h-full object-contain" />
               </div>
-              <span className="text-base font-bold text-sky-600 tracking-tight leading-tight truncate">{APP_NAME}</span>
+              <span className="text-base font-bold text-sky-600 tracking-tight leading-tight truncate">{APP_SHORT_NAME}</span>
             </div>
             <button onClick={onClose} className="lg:hidden p-2 hover:bg-sky-100 rounded-lg shrink-0">
               <X size={20} className="text-sky-600" />

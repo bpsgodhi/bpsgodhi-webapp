@@ -13,6 +13,8 @@ const Header = ({ onMenuClick, user }) => {
       .filter((m) => canViewItem(user, { path: `/m/${m.key}`, label: m.label, moduleKey: m.key }))
       .forEach((m) => fetchData(m.sheet));
 
+  const initial = (user?.name || 'U').trim().charAt(0).toUpperCase();
+
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-sky-200">
       <div className="flex justify-between items-center h-16 px-4 sm:px-6">
@@ -48,20 +50,26 @@ const Header = ({ onMenuClick, user }) => {
           <button
             onClick={syncAll}
             disabled={isSyncing}
-            className={`px-3 py-1.5 border border-sky-200 rounded-lg text-sky-700 bg-sky-50/50 hover:bg-sky-100 hover:text-sky-800 disabled:opacity-50 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm ${isSyncing ? 'animate-pulse' : ''}`}
+            className="group flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-sky-600 to-sky-500 text-white text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
             title="Sync with Google Sheet"
           >
-            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-            <span>{isSyncing ? 'Syncing...' : 'Sync Sheet'}</span>
+            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'} />
+            <span className="hidden sm:inline">{isSyncing ? 'Syncing…' : 'Sync Sheet'}</span>
           </button>
 
-          <div className="h-8 w-px bg-sky-200 mx-1 hidden sm:block"></div>
+          <div className="h-9 w-px bg-sky-200 mx-0.5 sm:mx-1 hidden sm:block"></div>
 
-          <div className="flex items-center gap-3 pl-2">
-            <div className="text-right pr-2">
-              <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.name || 'User'}</p>
-              <p className="text-[11px] font-medium text-slate-500 leading-tight">ID: {user?.username || '—'}</p>
-              <p className="text-[10px] uppercase font-bold text-sky-600 tracking-wider mt-0.5">{user?.role}</p>
+          {/* User chip */}
+          <div className="flex items-center gap-2.5 pl-0.5">
+            <div className="text-right hidden sm:block leading-tight">
+              <p className="text-sm font-bold text-gray-900">{user?.name || 'User'}</p>
+              <span className="inline-flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded">{user?.role || 'USER'}</span>
+                <span className="text-[10px] font-medium text-slate-400">#{user?.username || '—'}</span>
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-700 to-sky-500 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white shrink-0">
+              {initial}
             </div>
           </div>
         </div>
